@@ -18,6 +18,19 @@ Waves::Waves(sf::Texture& regularTexture, sf::Texture& fastTexture, sf::Texture&
             {6,3,2},
             {7,3,3}
         };
+        if (!font.loadFromFile("fonts/BarlowCondensed-Regular.ttf")) {
+        std::cerr << "Failed to load font\n";
+        }
+        gameMessage.setFont(font);
+        gameMessage.setCharacterSize(60);
+        gameMessage.setFillColor(sf::Color::White);
+        gameMessage.setPosition(400, 450);
+        messageBackground.setSize(sf::Vector2f(400, 100));
+        messageBackground.setFillColor(sf::Color(0,0,0,180));
+        messageBackground.setPosition(300, 450);
+        messageBackground.setOutlineThickness(5);
+        messageBackground.setOutlineColor(sf::Color::White);
+
         prepareNextWave();
 }
 
@@ -67,28 +80,37 @@ void Waves::update(float deltaTime) {
         }),
     zombies.end());
     
-    if (zombiesSpawned == spawnQueue.size() && zombies.empty()) {
-    std::string msg = "Wave " + std::to_string(currentWave + 1) + " completed!";
-    #ifdef _WIN32
-    MessageBoxA(nullptr, msg.c_str(), "Wave Complete", MB_OK | MB_ICONINFORMATION);
-    #endif
-    currentWave++;
+    if (zombiesSpawned == spawnQueue.size() && zombies.empty() && !showPopup) {
+        popupTimer = 2.0f;
+        showPopup = true;
 
-    if (currentWave >= waves.size()) {
-    #ifdef _WIN32
-        MessageBoxA(nullptr, "You won!", "Game Over", MB_OK | MB_ICONINFORMATION);
-    #endif
-    return;
+    if (currentWave >= waves.size() - 1) {
+        gameMessage.setString("You won!");
+    } else {
+        gameMessage.setString("Wave " + std::to_string(currentWave + 1) + " complete!");
+    }
+    }   
+
+    if (showPopup) {
+        popupTimer -= deltaTime;
+        if (popupTimer <= 0.0f) {
+            showPopup = false;
+            currentWave++;
+            prepareNextWave();
+        }
+    }
 }
 
-prepareNextWave();
-}
-}
 
 
 void Waves::drawZombies(sf::RenderWindow& window) {
     for (const auto& zombie : zombies) {
         zombie->draw(window);
+    }
+
+    if (showPopup) {
+        window.draw(gameMessage);
+        window.draw(messageBackground);
     }
 }
 

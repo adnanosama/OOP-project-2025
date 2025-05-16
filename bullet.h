@@ -13,7 +13,7 @@ private:
     static constexpr float HIT_RANGE = 10.0f;
 
 public:
-    Bullet(sf::Vector2f startPosition, Zombie* target, float speed = 500.0f, int damage = 1)
+    Bullet(sf::Vector2f startPosition, Zombie* target, float speed = 500.0f, int damage = 5)
         : target(target), speed(speed), damage(damage), active(true) {
         shape.setRadius(5);
         shape.setFillColor(sf::Color::Red);

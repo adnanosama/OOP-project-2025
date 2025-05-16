@@ -20,18 +20,22 @@ string showMainMenu(sf::RenderWindow& window) {
         return "exit";
     }
 
-    sf::RectangleShape overlay(sf::Vector2f(window.getSize()));
-    overlay.setFillColor(sf::Color(0, 0, 0, 150));
+    sf::Texture backgroundTexture;
+    if (!backgroundTexture.loadFromFile("resources/background.png")) {
+        std::cerr << "Failed to load background texture\n";
+        return "exit";
+    }
+    sf::Sprite background(backgroundTexture);
 
     sf::Text title("Tower Defense Simulator", font, 60);
     title.setPosition(100, 200);
     title.setFillColor(sf::Color::White);
 
-    sf::Text startbutton("Start Game", font, 32);
+    sf::Text startbutton("Start Game", font, 40);
     startbutton.setPosition(100, 400);
     startbutton.setFillColor(sf::Color::Green);
 
-    sf::Text exitbutton("Exit Game", font, 32);
+    sf::Text exitbutton("Exit Game", font, 40);
     exitbutton.setPosition(100, 500);
     exitbutton.setFillColor(sf::Color::Red);
 
@@ -56,7 +60,7 @@ string showMainMenu(sf::RenderWindow& window) {
         }
 
         window.clear();
-        window.draw(overlay);
+        window.draw(background);
         window.draw(title);
         window.draw(startbutton);
         window.draw(exitbutton);
@@ -104,7 +108,6 @@ void runGame(sf::RenderWindow& window) {
     towers.emplace_back(tower2Pos, towerTexture, 300.0f, 1.5f);
 
     sf::Clock clock;
-    bool damage = false;
 
     while (window.isOpen()) {
         sf::Event event;
@@ -150,13 +153,6 @@ void runGame(sf::RenderWindow& window) {
         for (int i = 0; i < (int)towers.size(); ++i) {
             bool canShoot = shootingActive && (i == bestTower);
             towers[i].update(deltaTime, zombies, canShoot);
-        }
-
-        if (damage) {
-            for (Zombie* z : zombies) {
-                z->takeDamage(1);
-            }
-            damage = false;
         }
 
         window.clear();

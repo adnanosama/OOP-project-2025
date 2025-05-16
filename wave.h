@@ -12,6 +12,13 @@ class Waves {
     sf::Texture& fastTexture;
     sf::Texture& strongTexture;
 
+    sf::Text gameMessage;
+    sf::RectangleShape messageBackground;
+    sf::Font font;
+
+    float popupTimer = 0.0f;
+    bool showPopup = false;
+
     float spawnTimer = 0.0f;
     int zombiesSpawned = 0;
     int currentWave = 0;

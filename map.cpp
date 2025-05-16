@@ -18,11 +18,6 @@ void Map::drawMap(sf::RenderWindow& window, sf::Texture& grassTexture, sf::Textu
                 sf::Texture& pathTexture, sf::Texture& chestTexture) {
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
-            // Always draw grass first
-            sf::Sprite grassSprite;
-            grassSprite.setTexture(grassTexture);
-            grassSprite.setPosition(j * tileSize, i * tileSize);
-            window.draw(grassSprite);
 
             // Draw other elements on top
             switch (Map::mapData[i][j]) {
@@ -41,10 +36,17 @@ void Map::drawMap(sf::RenderWindow& window, sf::Texture& grassTexture, sf::Textu
                     break;
                 }
                 case 2: { // Path
-                    sf::Sprite pathSprite;
-                    pathSprite.setTexture(pathTexture);
-                    pathSprite.setPosition(j * tileSize, i * tileSize);
-                    window.draw(pathSprite);
+                    const int repeatFactor = 3;
+
+                    sf::RectangleShape pathTile(sf::Vector2f(tileSize, tileSize));
+                    pathTile.setTexture(&pathTexture);
+                    pathTile.setTextureRect(sf::IntRect(
+                        0, 0,
+                        tileSize * repeatFactor,
+                        tileSize * repeatFactor
+                    ));
+                    pathTile.setPosition(j * tileSize, i * tileSize);
+                    window.draw(pathTile);
                     break;
                 }
                 // REMOVED CASE 3 (TOWERS DRAWN ELSEWHERE)

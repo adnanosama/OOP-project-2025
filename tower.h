@@ -22,11 +22,10 @@ public:
         float sX = Map::tileSize / float(tex.getSize().x);
         float sY = Map::tileSize / float(tex.getSize().y);
         float u = std::min(sX, sY);
-        sprite.setScale(u*1.4, u*1.4);
+        sprite.setScale(u*1.5, u*1.5);
     }
 
     void update(float dt, const std::vector<Zombie*>& zombies, bool allowFire) {
-        cooldown -= dt;
         Zombie* target = nullptr;
         float minD = range;
 
@@ -41,16 +40,18 @@ public:
             }
         }
 
-          if (allowFire && target && cooldown <= 0.f) {
-             bullets.emplace_back(pos, target);
-             cooldown = 1.f / attackSpeed;
-         }
+        
+        if (allowFire && target && cooldown <= 0.f) {
+        bullets.emplace_back(pos, target);
+        cooldown = cooldown;
+        }
 
         for (auto& b : bullets) b.update(dt);
         bullets.erase(std::remove_if(bullets.begin(), bullets.end(),
-                                     [](auto& b){ return !b.isActive(); }),
-                      bullets.end());
+            [](auto& b){ return !b.isActive(); }),
+            bullets.end());
     }
+
 
     void draw(sf::RenderWindow& w) const {
         w.draw(sprite);

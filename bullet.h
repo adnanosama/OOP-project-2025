@@ -21,8 +21,12 @@ public:
     }
 
      void update(float deltaTime) {
-        if (!active || !target || target->isDead()) 
+        if (!active) return;
+        
+        if (!target || target->isDead()) {
+            active = false; //  Deactivate if no target or it's dead
             return;
+        }
 
         // Current positions
         sf::Vector2f curPos   = shape.getPosition();

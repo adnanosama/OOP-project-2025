@@ -13,6 +13,27 @@
 
 using namespace std;
 
+const float worldW = Map::width * Map::tileSize;
+const float worldH = Map::height * Map::tileSize;
+
+sf::View calculateView(sf::RenderWindow& window) {
+    float winW = window.getSize().x;
+    float winH = window.getSize().y;
+    float winRatio = winW / winH;
+    float worldRatio = worldW / worldH;
+
+    float viewW, viewH;
+    if (winRatio > worldRatio) {
+        viewH = worldH;
+        viewW = worldH * winRatio;
+    } else {
+        viewW = worldW;
+        viewH = worldW / winRatio;
+    }
+
+    return sf::View(sf::FloatRect((worldW - viewW) / 2.f, (worldH - viewH) / 2.f, viewW, viewH));
+}
+
 string showMainMenu(sf::RenderWindow& window) {
     sf::Font font;
     if (!font.loadFromFile("fonts/BarlowCondensed-Regular.ttf")) {
@@ -25,54 +46,46 @@ string showMainMenu(sf::RenderWindow& window) {
         std::cerr << "Failed to load background texture\n";
         return "exit";
     }
-    sf::Sprite background(backgroundTexture);
 
+    sf::Sprite background(backgroundTexture);
     sf::Text title("Tower Defense Simulator", font, 60);
     title.setPosition(100, 200);
     title.setFillColor(sf::Color::White);
 
-    sf::Text startbutton("Start Game", font, 40);
-    startbutton.setPosition(100, 400);
-    startbutton.setFillColor(sf::Color::Green);
+    sf::Text startButton("Start Game", font, 40);
+    startButton.setPosition(100, 400);
+    startButton.setFillColor(sf::Color::Green);
 
-    sf::Text exitbutton("Exit Game", font, 40);
-    exitbutton.setPosition(100, 500);
-    exitbutton.setFillColor(sf::Color::Red);
+    sf::Text exitButton("Exit Game", font, 40);
+    exitButton.setPosition(100, 500);
+    exitButton.setFillColor(sf::Color::Red);
 
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed) {
-                return "exit";
-            }
-            if (event.type == sf::Event::MouseButtonPressed &&
-                event.mouseButton.button == sf::Mouse::Left) {
-                sf::Vector2f mousePos = window.mapPixelToCoords(
-                    sf::Mouse::getPosition(window)
-                );
-                if (startbutton.getGlobalBounds().contains(mousePos)) {
-                    return "start";
-                }
-                if (exitbutton.getGlobalBounds().contains(mousePos)) {
-                    return "exit";
-                }
+            if (event.type == sf::Event::Closed) return "exit";
+            if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
+                sf::Vector2f mousePos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
+                if (startButton.getGlobalBounds().contains(mousePos)) return "start";
+                if (exitButton.getGlobalBounds().contains(mousePos)) return "exit";
             }
         }
 
         window.clear();
         window.draw(background);
         window.draw(title);
-        window.draw(startbutton);
-        window.draw(exitbutton);
+        window.draw(startButton);
+        window.draw(exitButton);
         window.display();
     }
+
     return "exit";
 }
 
 void runGame(sf::RenderWindow& window) {
-    bool shootingActive = false;
+    sf::View gameView = calculateView(window);
+    window.setView(gameView);
 
-    // Load textures
     sf::Texture grassTexture, towerTexture, pathTexture, chestTexture;
     sf::Texture regZombieTexture, fastZombieTexture, strongZombieTexture;
 
@@ -86,6 +99,16 @@ void runGame(sf::RenderWindow& window) {
         std::cerr << "Failed to load textures!" << std::endl;
         return;
     }
+
+    grassTexture.setRepeated(true);
+    pathTexture.setRepeated(true);
+
+    const int grassRepeatFactor = 4;
+    sf::RectangleShape grassBg;
+    grassBg.setSize(sf::Vector2f(gameView.getSize()));
+    grassBg.setTexture(&grassTexture);
+    grassBg.setTextureRect(sf::IntRect(0, 0, gameView.getSize().x * grassRepeatFactor, gameView.getSize().y * grassRepeatFactor));
+    grassBg.setPosition(gameView.getCenter() - gameView.getSize() / 2.f);
 
     const int tileSize = Map::tileSize;
     vector<sf::Vector2f> path = {
@@ -101,72 +124,88 @@ void runGame(sf::RenderWindow& window) {
     };
 
     Waves waves(regZombieTexture, fastZombieTexture, strongZombieTexture, path);
-    vector<Tower> towers;
-    const sf::Vector2f tower1Pos(1 * tileSize + tileSize/2, 3 * tileSize + tileSize/2);
-    const sf::Vector2f tower2Pos(7 * tileSize + tileSize/2, 7 * tileSize + tileSize/2);
-    towers.emplace_back(tower1Pos, towerTexture, 300.0f, 1.5f);
-    towers.emplace_back(tower2Pos, towerTexture, 300.0f, 1.5f);
+    vector<Tower> towers = {
+        Tower({1 * tileSize + tileSize/2, 3 * tileSize + tileSize/2}, towerTexture, 300.0f, 1.5f),
+        Tower({7 * tileSize + tileSize/2, 6 * tileSize + tileSize/2}, towerTexture, 300.0f, 1.5f)
+    };
 
-    sf::Clock clock;
+    sf::Clock clock; 
+    std::vector<bool> towerClicked(towers.size(), false);
+    std::vector<float> towerClickCooldown(towers.size(), 0.f);
+    const float customCooldown = 0.3f; //cooldown value
 
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed ||
-               (event.type == sf::Event::KeyPressed &&
-                event.key.code == sf::Keyboard::Escape)) {
+            if (event.type == sf::Event::Closed || 
+                (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape)) {
                 window.close();
-            }
-            if (event.type == sf::Event::KeyPressed &&
-                event.key.code == sf::Keyboard::E) {
-                shootingActive = true;
-            }
-            if (event.type == sf::Event::KeyReleased &&
-                event.key.code == sf::Keyboard::E) {
-                shootingActive = false;
+            } else if (event.type == sf::Event::Resized) {
+                gameView = calculateView(window);
+                window.setView(gameView);
+                grassBg.setSize(gameView.getSize());
+                grassBg.setTextureRect(sf::IntRect(0, 0, gameView.getSize().x * grassRepeatFactor, gameView.getSize().y * grassRepeatFactor));
+                grassBg.setPosition(gameView.getCenter() - gameView.getSize() / 2.f);
+            } else if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
+                sf::Vector2f clickPos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
+                for (size_t i = 0; i < towers.size(); ++i) {
+                    sf::FloatRect towerBounds(
+                        towers[i].getPosition().x - towerTexture.getSize().x / 2.f,
+                        towers[i].getPosition().y - towerTexture.getSize().y / 2.f,
+                        towerTexture.getSize().x,
+                        towerTexture.getSize().y
+                    );
+                    if (towerBounds.contains(clickPos) && towerClickCooldown[i] <= 0.f) {
+                        towerClicked[i] = true;
+                        towerClickCooldown[i] = customCooldown;
+                    }
+                }
             }
         }
 
         float deltaTime = clock.restart().asSeconds();
+
+        // Update cooldowns
+        for (size_t i = 0; i < towerClickCooldown.size(); ++i) {
+            if (towerClickCooldown[i] > 0.f)
+                towerClickCooldown[i] -= deltaTime;
+        }
+
         waves.update(deltaTime);
         auto zombies = waves.getZombies();
 
-        int bestTower = -1;
-        float bestDist = numeric_limits<float>::max();
-        for (int i = 0; i < (int)towers.size(); ++i) {
-            float minD = numeric_limits<float>::max();
-            for (auto z : zombies) {
-                if (z->isDead()) continue;
-                float dx = towers[i].getPosition().x - z->getPosition().x;
-                float dy = towers[i].getPosition().y - z->getPosition().y;
-                float d  = hypot(dx, dy);
-                if (d < towers[i].getRange() && d < minD)
-                    minD = d;
-            }
-            if (minD < bestDist) {
-                bestDist  = minD;
-                bestTower = (minD < numeric_limits<float>::max() ? i : -1);
-            }
-        }
+        for (size_t i = 0; i < towers.size(); ++i) {
+            bool canShoot = false;
 
-        // Only bestTower may shoot when E is down
-        for (int i = 0; i < (int)towers.size(); ++i) {
-            bool canShoot = shootingActive && (i == bestTower);
+            if (towerClicked[i]) {
+                for (auto z : zombies) {
+                    if (z->isDead()) continue;
+                    float dx = towers[i].getPosition().x - z->getPosition().x;
+                    float dy = towers[i].getPosition().y - z->getPosition().y;
+                    float dist = hypot(dx, dy);
+                    if (dist < towers[i].getRange()) {
+                        canShoot = true;
+                        break;
+                    }
+                }
+            }
+
             towers[i].update(deltaTime, zombies, canShoot);
+            towerClicked[i] = false;
         }
 
         window.clear();
+        window.setView(gameView);
+        window.draw(grassBg);
         Map::drawMap(window, grassTexture, towerTexture, pathTexture, chestTexture);
         waves.drawZombies(window);
-        for (auto& tower : towers) {
-            tower.draw(window);
-        }
+        for (auto& tower : towers) tower.draw(window);
         window.display();
     }
 }
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode(1000, 900), "Tower Defense");
+    sf::RenderWindow window(sf::VideoMode(1000, 900), "Tower Defense", sf::Style::Default);
     window.setFramerateLimit(60);
 
     while (window.isOpen()) {
@@ -177,5 +216,6 @@ int main() {
             window.close();
         }
     }
+
     return 0;
 }

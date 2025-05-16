@@ -1,9 +1,6 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
 #include <vector>
-#ifdef _WIN32
-#include <windows.h>
-#endif
 #include <iostream>
 #include "wave.h"
 #include <string>
@@ -24,13 +21,22 @@ Waves::Waves(sf::Texture& regularTexture, sf::Texture& fastTexture, sf::Texture&
         gameMessage.setFont(font);
         gameMessage.setCharacterSize(60);
         gameMessage.setFillColor(sf::Color::White);
-        gameMessage.setPosition(400, 450);
-        messageBackground.setSize(sf::Vector2f(400, 100));
+        gameMessage.setPosition(300, 450);
+        messageBackground.setSize(sf::Vector2f(600, 200));
         messageBackground.setFillColor(sf::Color(0,0,0,180));
-        messageBackground.setPosition(300, 450);
+        messageBackground.setPosition(200, 400);
         messageBackground.setOutlineThickness(5);
         messageBackground.setOutlineColor(sf::Color::White);
-
+        breachWarning.setFont(font);
+        breachWarning.setCharacterSize(50);
+        breachWarning.setFillColor(sf::Color::Red);
+        breachWarning.setPosition(20, 800);
+        waveMessage.setFont(font);
+        waveMessage.setCharacterSize(50);
+        waveMessage.setFillColor(sf::Color::Red);
+        waveMessage.setPosition(575, 50);
+        updateBreachWarning();
+        updateWaveMessage();
         prepareNextWave();
 }
 
@@ -39,14 +45,14 @@ void Waves::prepareNextWave() {
 
     spawnQueue.clear();
     const auto& wave = waves[currentWave];
+    for (int i = 0; i < wave.strongCount; ++i) {
+        spawnQueue.push_back("strong");
+    }
     for (int i = 0; i < wave.regularCount; ++i) {
         spawnQueue.push_back("regular");
     }
     for (int i = 0; i < wave.fastCount; ++i) {
         spawnQueue.push_back("fast");
-    }
-    for (int i = 0; i < wave.strongCount; ++i) {
-        spawnQueue.push_back("strong");
     }
     zombiesSpawned = 0;
     spawnTimer = 0.0f;
@@ -58,12 +64,12 @@ void Waves::update(float deltaTime) {
 
     if (zombiesSpawned < spawnQueue.size() && spawnTimer >= 1.0f) {
         const string& type = spawnQueue[zombiesSpawned];
-        if (type == "regular") {
+        if (type == "strong") {
+            zombies.emplace_back(make_unique<StrongZombie>(strongTexture, path));
+        } else if (type == "regular") { 
             zombies.emplace_back(make_unique<Zombie>(regularTexture, path));
         } else if (type == "fast") {
             zombies.emplace_back(make_unique<FastZombie>(fastTexture, path));
-        } else if (type == "strong") {
-            zombies.emplace_back(make_unique<StrongZombie>(strongTexture, path));
         }
         spawnTimer = 0.0f;
         zombiesSpawned++;
@@ -71,6 +77,18 @@ void Waves::update(float deltaTime) {
 
     for (auto& zombie : zombies) {
         zombie->update(deltaTime);
+
+        if (zombie->reachedEnd() && !zombie->isDead()) {
+            zombiesend++;
+            zombie->takeDamage(1000);
+            updateBreachWarning();
+        }
+    }
+
+    if (zombiesend >= 3) {
+        gameOver = true;
+        gameMessage.setString("Game Over! :()");
+        return;
     }
 
     zombies.erase(
@@ -85,7 +103,7 @@ void Waves::update(float deltaTime) {
         showPopup = true;
 
     if (currentWave >= waves.size() - 1) {
-        gameMessage.setString("You won!");
+        gameMessage.setString("You won! :)");
     } else {
         gameMessage.setString("Wave " + std::to_string(currentWave + 1) + " complete!");
     }
@@ -96,6 +114,7 @@ void Waves::update(float deltaTime) {
         if (popupTimer <= 0.0f) {
             showPopup = false;
             currentWave++;
+            updateWaveMessage();
             prepareNextWave();
         }
     }
@@ -109,9 +128,15 @@ void Waves::drawZombies(sf::RenderWindow& window) {
     }
 
     if (showPopup) {
-        window.draw(gameMessage);
         window.draw(messageBackground);
+        window.draw(gameMessage);
     }
+    if (gameOver) {
+        window.draw(messageBackground);
+        window.draw(gameMessage);
+    }
+    window.draw(breachWarning);
+    window.draw(waveMessage);
 }
 
 bool Waves::allZombiesDead() const {
@@ -129,3 +154,19 @@ vector<Zombie*> Waves::getZombies() const {
     }
     return zombiePtrs;
 }
+
+void Waves::updateBreachWarning() {
+    int remainingZombies = 3 - zombiesend;
+    if (remainingZombies < 0) {
+        remainingZombies = 0;
+    }
+    breachWarning.setString("Chest Health: " + std::to_string(remainingZombies));
+}
+
+void Waves::updateWaveMessage() {
+    int wavescompleted = currentWave;
+    if (wavescompleted < 0) {
+        wavescompleted = 0;
+    }
+    waveMessage.setString("Waves Completed: " + std::to_string(wavescompleted) + " / " + std::to_string(waves.size()));
+}   

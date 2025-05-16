@@ -14,6 +14,8 @@ class Waves {
 
     sf::Text gameMessage;
     sf::RectangleShape messageBackground;
+    sf::Text breachWarning;
+    sf::Text waveMessage;
     sf::Font font;
 
     float popupTimer = 0.0f;
@@ -22,6 +24,8 @@ class Waves {
     float spawnTimer = 0.0f;
     int zombiesSpawned = 0;
     int currentWave = 0;
+    int zombiesend = 0;
+    bool gameOver = false;
 
     struct Wave {
         int regularCount;
@@ -40,4 +44,6 @@ class Waves {
     bool allZombiesDead() const;
     void prepareNextWave();
     bool isFinished() const;
+    void updateBreachWarning();
+    void updateWaveMessage();
 };

@@ -6,8 +6,10 @@
 #include <string>
 using namespace std;
 
-Waves::Waves(sf::Texture& regularTexture, sf::Texture& fastTexture, sf::Texture& strongTexture, const std::vector<sf::Vector2f>& path)
-    : regularTexture(regularTexture), fastTexture(fastTexture), strongTexture(strongTexture), path(path) {
+Waves::Waves(sf::Texture& regularTexture, sf::Texture& fastTexture, sf::Texture& strongTexture, const std::vector<sf::Vector2f>& path,
+             sf::Sound* zombieHitSound, sf::Sound* zombieDieSound)
+    : regularTexture(regularTexture), fastTexture(fastTexture), strongTexture(strongTexture), path(path),
+      zombieHitSound(zombieHitSound), zombieDieSound(zombieDieSound) {
         waves = {
             {5,0,0},
             {6,1,0},
@@ -63,13 +65,13 @@ void Waves::update(float deltaTime) {
     spawnTimer += deltaTime;
 
     if (zombiesSpawned < spawnQueue.size() && spawnTimer >= 1.0f) {
-        const string& type = spawnQueue[zombiesSpawned];
+        const std::string& type = spawnQueue[zombiesSpawned];
         if (type == "strong") {
-            zombies.emplace_back(make_unique<StrongZombie>(strongTexture, path));
-        } else if (type == "regular") { 
-            zombies.emplace_back(make_unique<Zombie>(regularTexture, path));
+            zombies.emplace_back(std::make_unique<StrongZombie>(strongTexture, path, zombieHitSound, zombieDieSound));
+        } else if (type == "regular") {
+            zombies.emplace_back(std::make_unique<Zombie>(regularTexture, path, zombieHitSound, zombieDieSound));
         } else if (type == "fast") {
-            zombies.emplace_back(make_unique<FastZombie>(fastTexture, path));
+            zombies.emplace_back(std::make_unique<FastZombie>(fastTexture, path, zombieHitSound, zombieDieSound));
         }
         spawnTimer = 0.0f;
         zombiesSpawned++;
@@ -169,4 +171,4 @@ void Waves::updateWaveMessage() {
         wavescompleted = 0;
     }
     waveMessage.setString("Waves Completed: " + std::to_string(wavescompleted) + " / " + std::to_string(waves.size()));
-}   
+}

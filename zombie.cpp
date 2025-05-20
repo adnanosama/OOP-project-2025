@@ -3,18 +3,20 @@
 #include <cmath>
 #include <iostream>
 
-Zombie::Zombie(sf::Texture& texture, const std::vector<sf::Vector2f>& path)
-    : path(path), speed(50.0f), health(10), currentTargetIndex(0) {
+Zombie::Zombie(sf::Texture& texture, const std::vector<sf::Vector2f>& path, sf::Sound* hitSound, sf::Sound* dieSound)
+    : path(path), speed(50.0f), health(10), currentTargetIndex(0), hitSound(hitSound), dieSound(dieSound) {
     sprite.setTexture(texture);
     sprite.setScale(1.0f, 1.0f);
     sprite.setPosition(path[0]);
 }
 
 void Zombie::takeDamage(int damage) {
-        health -= damage;
-        if (health <= 0) {
-            health = 0;
-        }
+    health -= damage;
+    if (hitSound) hitSound->play();
+    if (health <= 0) {
+        health = 0;
+        if (dieSound) dieSound->play();
+    }
 }
 
 bool Zombie::reachedEnd() const {
@@ -44,8 +46,8 @@ void Zombie::draw(sf::RenderWindow& window) {
     }
 }
 
-FastZombie::FastZombie(sf::Texture& texture, const std::vector<sf::Vector2f>& path)
-    : Zombie(texture, path) {
+FastZombie::FastZombie(sf::Texture& texture, const std::vector<sf::Vector2f>& path, sf::Sound* hitSound, sf::Sound* dieSound)
+    : Zombie(texture, path, hitSound, dieSound) {
         speed = 100.0f;
         health = 5;
         sprite.setTexture(texture);
@@ -53,8 +55,8 @@ FastZombie::FastZombie(sf::Texture& texture, const std::vector<sf::Vector2f>& pa
         sprite.setPosition(path[0]);
 }
 
-StrongZombie::StrongZombie(sf::Texture& texture, const std::vector<sf::Vector2f>& path)
-    : Zombie(texture, path) {
+StrongZombie::StrongZombie(sf::Texture& texture, const std::vector<sf::Vector2f>& path, sf::Sound* hitSound, sf::Sound* dieSound)
+    : Zombie(texture, path, hitSound, dieSound) {
     speed = 30.0f;
     health = 20;
     sprite.setTexture(texture);

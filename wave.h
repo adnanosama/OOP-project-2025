@@ -27,6 +27,9 @@ class Waves {
     int zombiesend = 0;
     bool gameOver = false;
 
+    sf::Sound* zombieHitSound;
+    sf::Sound* zombieDieSound;
+
     struct Wave {
         int regularCount;
         int fastCount;
@@ -38,7 +41,8 @@ class Waves {
 
     public:
     std::vector<Zombie*> getZombies() const;
-    Waves(sf::Texture& regularTexture, sf::Texture& fastTexture, sf::Texture& strongTexture, const std::vector<sf::Vector2f>& path);
+    Waves(sf::Texture& regularTexture, sf::Texture& fastTexture, sf::Texture& strongTexture, const std::vector<sf::Vector2f>& path,
+          sf::Sound* zombieHitSound, sf::Sound* zombieDieSound);
     void update(float deltaTime);
     void drawZombies(sf::RenderWindow& window);
     bool allZombiesDead() const;

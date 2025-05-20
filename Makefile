@@ -3,7 +3,7 @@
 CXX    := g++
 INCDIR := src/include
 LIBDIR := src/lib
-LIBS   := -lsfml-graphics -lsfml-window -lsfml-system
+LIBS   := -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio
 SRCS   := main.cpp map.cpp zombie.cpp wave.cpp
 OBJS   := $(SRCS:.cpp=.o)
 # -------------------------------

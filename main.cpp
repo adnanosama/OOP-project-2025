@@ -168,6 +168,20 @@ void runGame(sf::RenderWindow& window) {
       gameView.getCenter() - gameView.getSize() / 2.f
     );
 
+    // load sound effects
+    sf::SoundBuffer bulletHitBuffer, zombieHitBuffer, zombieDieBuffer;
+    sf::Sound bulletHitSound, zombieHitSound, zombieDieSound;
+
+    if (!bulletHitBuffer.loadFromFile("resources/bullet-hit.wav") ||
+        !zombieHitBuffer.loadFromFile("resources/zombiehit.wav") ||
+        !zombieDieBuffer.loadFromFile("resources/zombiedie.wav")) {
+        cerr << "Failed to load sound effects!" << endl;
+        return;
+    }
+    bulletHitSound.setBuffer(bulletHitBuffer);
+    zombieHitSound.setBuffer(zombieHitBuffer);
+    zombieDieSound.setBuffer(zombieDieBuffer);
+
     // path & waves
     const int ts = Map::tileSize;
     vector<sf::Vector2f> path = {
@@ -175,12 +189,12 @@ void runGame(sf::RenderWindow& window) {
         {4*ts,4*ts}, {5*ts,5*ts}, {5*ts,6*ts}, {5*ts,7*ts},
         {5*ts,8*ts}
     };
-    Waves waves(regZ, fastZ, strongZ, path);
+    Waves waves(regZ, fastZ, strongZ, path, &zombieHitSound, &zombieDieSound);
 
     // two towers
     vector<Tower> towers = {
-      Tower({1*ts+ts/2,3*ts+ts/2}, towerT, 300.f, 1.5f),
-      Tower({7*ts+ts/2,6*ts+ts/2}, towerT, 300.f, 1.5f)
+      Tower({1*ts+ts/2,3*ts+ts/2}, towerT, 300.f, 1.5f, &bulletHitSound),
+      Tower({7*ts+ts/2,6*ts+ts/2}, towerT, 300.f, 1.5f, &bulletHitSound)
     };
 
     // per-tower click cooldown

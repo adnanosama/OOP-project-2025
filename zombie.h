@@ -1,5 +1,6 @@
 #pragma once
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <vector>
 
 class Zombie {
@@ -9,9 +10,11 @@ class Zombie {
     float speed;
     int health;
     int currentTargetIndex;
+    sf::Sound* hitSound = nullptr;
+    sf::Sound* dieSound = nullptr;
 
     public:
-    Zombie(sf::Texture& texture, const std::vector<sf::Vector2f>& path);
+    Zombie(sf::Texture& texture, const std::vector<sf::Vector2f>& path, sf::Sound* hitSound = nullptr, sf::Sound* dieSound = nullptr);
     sf::Vector2f getPosition() const { return sprite.getPosition(); }
     sf::FloatRect getBounds() const { 
         sf::FloatRect b = sprite.getGlobalBounds();
@@ -32,14 +35,15 @@ class Zombie {
     void takeDamage(int damage);
     bool isDead() const { return health <= 0; } 
     bool reachedEnd() const;
+    void setSounds(sf::Sound* hit, sf::Sound* die) { hitSound = hit; dieSound = die; }
 };
 
 class FastZombie : public Zombie {
     public:
-    FastZombie(sf::Texture& texture, const std::vector<sf::Vector2f>& path);
+    FastZombie(sf::Texture& texture, const std::vector<sf::Vector2f>& path, sf::Sound* hitSound, sf::Sound* dieSound);
 };
 
 class StrongZombie : public Zombie {
     public:
-    StrongZombie(sf::Texture& texture, const std::vector<sf::Vector2f>& path);
+    StrongZombie(sf::Texture& texture, const std::vector<sf::Vector2f>& path, sf::Sound* hitSound, sf::Sound* dieSound);
 };

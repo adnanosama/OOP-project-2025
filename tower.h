@@ -2,6 +2,7 @@
 #pragma once
 #include <vector>
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include "bullet.h"
 #include "zombie.h"
 
@@ -12,10 +13,11 @@ class Tower {
     float attackSpeed;
     sf::Sprite sprite;
     std::vector<Bullet> bullets;
+    sf::Sound* fireSound = nullptr; // Add this line
 
 public:
-    Tower(sf::Vector2f position, const sf::Texture& tex, float range = 300.f, float atkSpd = 1.5f)
-      : pos(position), cooldown(0), range(range), attackSpeed(atkSpd) {
+    Tower(sf::Vector2f position, const sf::Texture& tex, float range = 300.f, float atkSpd = 1.5f, sf::Sound* fireSound = nullptr)
+      : pos(position), cooldown(0), range(range), attackSpeed(atkSpd), fireSound(fireSound) {
         sprite.setTexture(tex);
         sprite.setOrigin(tex.getSize().x / 2.f, tex.getSize().y / 2.f);
         sprite.setPosition(pos);
@@ -42,8 +44,9 @@ public:
 
         
         if (allowFire && target && cooldown <= 0.f) {
-        bullets.emplace_back(pos, target);
-        cooldown = cooldown;
+            bullets.emplace_back(pos, target);
+            if (fireSound) fireSound->play(); // Play sound
+            cooldown = cooldown;
         }
 
         for (auto& b : bullets) b.update(dt);

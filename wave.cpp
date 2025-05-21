@@ -105,7 +105,8 @@ void Waves::update(float deltaTime) {
         showPopup = true;
 
     if (currentWave >= waves.size() - 1) {
-        gameMessage.setString("You won! :)");
+        // Do not show "You won!" here; let main game handle win message
+        gameMessage.setString(""); // Or leave empty, or set to a different message if you want
     } else {
         gameMessage.setString("Wave " + std::to_string(currentWave + 1) + " complete!");
     }
@@ -125,20 +126,51 @@ void Waves::update(float deltaTime) {
 
 
 void Waves::drawZombies(sf::RenderWindow& window) {
+    // Draw all zombies first
     for (const auto& zombie : zombies) {
         zombie->draw(window);
     }
 
-    if (showPopup) {
+    // Store current view for restoration later
+    sf::View currentView = window.getView();
+    sf::Vector2u winSize = window.getSize();
+    
+    // Switch to UI view for HUD elements
+    sf::View uiView(sf::FloatRect(0, 0, winSize.x, winSize.y));
+    window.setView(uiView);
+
+    // Draw wave completion popup if active and has message
+    if (showPopup && !gameMessage.getString().isEmpty()) {
+        // Create message box
+        sf::FloatRect textBounds = gameMessage.getLocalBounds();
+        float padding = 30.f;
+        sf::Vector2f boxSize(textBounds.width + padding*2, textBounds.height + padding*2);
+        
+        messageBackground.setSize(boxSize);
+        messageBackground.setPosition((winSize.x - boxSize.x)/2, (winSize.y - boxSize.y)/2);
+        messageBackground.setFillColor(sf::Color(0, 0, 0, 220));
+        messageBackground.setOutlineThickness(2.f);
+        messageBackground.setOutlineColor(sf::Color::White);
+
+        // Center text in box
+        gameMessage.setPosition(
+            (winSize.x - textBounds.width)/2,
+            (winSize.y - textBounds.height)/2 - 10
+        );
+
         window.draw(messageBackground);
         window.draw(gameMessage);
     }
-    if (gameOver) {
-        window.draw(messageBackground);
-        window.draw(gameMessage);
-    }
+
+    // Update and draw HUD positions
+    breachWarning.setPosition(20, winSize.y - 70);  // Bottom left
+    waveMessage.setPosition(winSize.x - waveMessage.getLocalBounds().width - 20, 20);  // Top right
+    
     window.draw(breachWarning);
     window.draw(waveMessage);
+
+    // Restore original view
+    window.setView(currentView);
 }
 
 bool Waves::allZombiesDead() const {
